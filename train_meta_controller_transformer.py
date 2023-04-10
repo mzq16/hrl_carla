@@ -801,7 +801,7 @@ def eval():
             base_ckpt_path=args.skill_ckpt_path, 
             base_buffer_path=args.skill_buffer_path,
             train_bool=False,
-            device=device
+            #device=device
         )
 
         # get meta network to control skill robot
