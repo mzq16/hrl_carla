@@ -577,7 +577,7 @@ def main():
         server_env_configs = diayn_robot_transformer.propre_envconfig(num_env=2)
         server_manager = server_utils.CarlaServerManager(args.carla_sh_path, configs=server_env_configs)
         server_manager.start()
-        device = torch.device(2)
+        device = torch.device(1)
         env_cfg1 = {
             'port':2000,
             'map_id':0,
