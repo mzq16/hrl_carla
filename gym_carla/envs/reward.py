@@ -200,9 +200,7 @@ class Reward(object):
         desired_speed = min(desired_speed_tl, basic_speed, desired_speed_vehicle)
         r_speed = 1 - np.abs(ev_speed - desired_speed) / basic_speed
 
-        # slow penalty
-        if desired_speed > 1 and ev_speed < 0.5:    
-            r_speed -= 0.2
+        
 
         '''
         if ev_speed > basic_speed:
