@@ -106,7 +106,7 @@ class Robot(object):
         ind = np.where(b)[0]
         return len(ind), ind
         
-    def check_ckpt(self, dir_path='SAC/diayn_ckpt'):
+    def check_ckpt(self, dir_path='SAC_train_data/diayn_ckpt'):
         ckpt_list = os.listdir(dir_path)
         if ckpt_list:
             ckpt_list[0].split('_')[1].split('.')[0]
@@ -118,7 +118,7 @@ class Robot(object):
             self._start_timesteps = 0
             print('no exist ckpt, start a new train')
 
-    def check_buffer(self, dir_path='SAC/diayn_buffer'):
+    def check_buffer(self, dir_path='SAC_train_data/diayn_buffer'):
         buffer_list = os.listdir(dir_path)
         if len(buffer_list) == 0:
             self._dir_buffer = None
