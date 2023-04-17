@@ -687,15 +687,22 @@ class RLdiayn_egov_Wrapper(gym.Wrapper):
         state_list = []
         obs_dict = {}
         bev_only = None
-        if 'bev_mask' in obs:
-            bev = obs['bev_mask']
+        #if 'bev_mask' in obs:
+        #    bev = obs['bev_mask']
         if 'bev_ev_history_mask' in obs:
             bev_only = obs['bev_ev_history_mask'][-self.number_timestep:]
+            image = np.zeros(bev_only.shape, dtype=np.uint8)                
+            road_mask = obs['bev_mask'][1]                                # road mask, dtype: int64  
+            road_mask = np.array(road_mask, dtype=bool)                
+            for i in range(self.number_timestep):
+                image[i][road_mask] = 128 
+                image[i][bev_only[i]] = 255
         #if only_ego:
         #    bev_only = bev[3]   # ego vehicle mask
         #    bev_only = np.expand_dims(bev_only, 0)
 
         # state order: control,vel -> throttle, steer, brake, gear, vel_x, vel_y
+        '''
         if 'control' in obs:
             state_list.append(obs['control'].throttle)
             state_list.append(obs['control'].steer)
@@ -719,6 +726,18 @@ class RLdiayn_egov_Wrapper(gym.Wrapper):
         obs_dict['state'] = state.astype(np.float32)
         obs_dict['z_onehot'] = np.zeros((number_z,))
         obs_dict['z_onehot'][0] = 1
+        '''
+        if 'velocity' in obs:
+            vel_x = obs['velocity'].x
+            vel_y = obs['velocity'].y
+            state_list.append(vel_x)
+            state_list.append(vel_y)
+        state = np.array(state_list)
+        obs_dict['birdview'] = image
+        # obs_dict['bev_ego'] = image[0].reshape(1, 192, 192)
+        obs_dict['state'] = state.astype(np.float32)
+        obs_dict['z'] = np.zeros((self.number_timestep, )) - 1
+        obs_dict['z'][0] = 0
         return obs_dict
     
     def preprocess_statespace(self):
