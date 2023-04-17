@@ -20,11 +20,11 @@ class WandbCallback(BaseCallback):
         save_dir = Path.cwd()
         print(save_dir)
         # self._save_dir = save_dir
-        self._video_path = Path('SAC/diayn_video')
+        self._video_path = Path('SAC_train_data/diayn_video')
         self._video_path.mkdir(parents=True, exist_ok=True)
-        self._ckpt_dir = Path('SAC/diayn_ckpt')
+        self._ckpt_dir = Path('SAC_train_data/diayn_ckpt')
         self._ckpt_dir.mkdir(parents=True, exist_ok=True)
-        self._buffer_dir = Path('SAC/diayn_buffer')
+        self._buffer_dir = Path('SAC_train_data/diayn_buffer')
         self._buffer_dir.mkdir(parents=True, exist_ok=True)
 
         # wandb.init(project=cfg.wb_project, dir=save_dir, name=cfg.wb_runname)
