@@ -736,17 +736,19 @@ class RLdiayn_egov_Wrapper(gym.Wrapper):
         obs_dict['birdview'] = image
         # obs_dict['bev_ego'] = image[0].reshape(1, 192, 192)
         obs_dict['state'] = state.astype(np.float32)
-        obs_dict['z'] = np.zeros((self.number_timestep, )) - 1
-        obs_dict['z'][0] = 0
+        obs_dict['z_onehot'] = np.zeros((number_z,))
+        obs_dict['z_onehot'][0] = 1                # meta use 'z', diayn use 'z_onehot' 
+        #obs_dict['z'] = np.zeros((self.number_timestep, )) - 1
+        #obs_dict['z'][0] = 0
         return obs_dict
     
     def preprocess_statespace(self):
         # state order: control,vel -> throttle, steer, brake, gear, vel_x, vel_y
         state_space = []
-        state_space.append(self._observation_space['throttle'])
-        state_space.append(self._observation_space['steer'])
-        state_space.append(self._observation_space['brake'])
-        state_space.append(self._observation_space['gear'])
+        #state_space.append(self._observation_space['throttle'])
+        #state_space.append(self._observation_space['steer'])
+        #state_space.append(self._observation_space['brake'])
+        #state_space.append(self._observation_space['gear'])
         state_space.append(self._observation_space['vel_xy'])
         state_low = np.concatenate([s.low for s in state_space])
         state_high = np.concatenate([s.high for s in state_space])

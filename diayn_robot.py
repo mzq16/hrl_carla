@@ -265,11 +265,11 @@ def main():
         help='path of carla server')
     argparser.add_argument(
         '--base_ckpt_path',
-        default='SAC/diayn_ckpt',
+        default='SAC_train_data/diayn_ckpt',
         help='path of ckpt dir')
     argparser.add_argument(
         '--base_buffer_path',
-        default='SAC/diayn_buffer',
+        default='SAC_train_data/diayn_buffer',
         help='path of buffer dir')
     argparser.add_argument(
         '--number_z',
@@ -336,9 +336,9 @@ def main():
             base_buffer_path=args.base_buffer_path)
         robot.learn(callback=callback)
 
-    # except:
-    #    pid = os.getpid()
-    #    subprocess.Popen('kill {}'.format(pid), shell=True)
+    except:
+        pid = os.getpid()
+        subprocess.Popen('kill {}'.format(pid), shell=True)
 
     finally:
         env.close()
