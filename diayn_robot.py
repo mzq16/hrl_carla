@@ -301,7 +301,7 @@ def main():
             env = SubprocVecEnv([lambda port=port: env_make(**port) for port in env_cfg])
         
         wandb_cfg = {
-            'wb_project': 'diayn_5skill_road&ego_school',
+            'wb_project': 'diayn_5skill_road&ego_school_iter',
             'wb_name': None,
             'wb_notes': None,
             'wb_tags': None

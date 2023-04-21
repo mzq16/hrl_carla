@@ -379,6 +379,28 @@ class my_diayn(BaseAlgorithm):
         actor_losses, critic_losses = [], []
         dis_losses = []
         reward_ps = []
+
+        # 1.train discrimnator
+        for gradient_step in range(gradient_steps):
+            # Sample replay buffer
+            replay_data = self.replay_buffer.sample(batch_size, env=self._vec_normalize_env)
+            with th.no_grad():
+                # mid extract
+                tmp_obs = WandbCallback.dict_to_tensor(replay_data.observations, self.device)
+                mid_features = self.policy.features_extractor.half_forward(tmp_obs)
+                
+            # compute discriminator loss
+            if self._add_action:
+                logits = self.policy.discriminator(mid_features, replay_data.actions)
+            else:
+                logits = self.policy.discriminator(mid_features)
+            # dis_loss = F.mse_loss(logits, replay_data.observations['z_onehot'])
+            dis_loss = F.cross_entropy(logits, replay_data.observations['z_onehot'].float())
+            self.discriminator.optimizer.zero_grad()
+            dis_loss.backward()
+            self.discriminator.optimizer.step()
+
+        # 2.train rl with disc 
         for gradient_step in range(gradient_steps):
             # Sample replay buffer
             replay_data = self.replay_buffer.sample(batch_size, env=self._vec_normalize_env)
@@ -415,17 +437,13 @@ class my_diayn(BaseAlgorithm):
                 # mid extract
                 tmp_obs = WandbCallback.dict_to_tensor(replay_data.observations, self.device)
                 mid_features = self.policy.features_extractor.half_forward(tmp_obs)
-                #aug_mid_features = torch.cat([mid_features, replay_data.actions], dim=1)
-            # compute discriminator loss
+                
+            # compute discriminator loss but not train
             if self._add_action:
                 logits = self.policy.discriminator(mid_features, replay_data.actions)
             else:
                 logits = self.policy.discriminator(mid_features)
-            #dis_loss = F.mse_loss(logits, replay_data.observations['z_onehot'])
-            dis_loss = F.cross_entropy(logits, replay_data.observations['z_onehot'].float())
-            self.discriminator.optimizer.zero_grad()
-            dis_loss.backward()
-            self.discriminator.optimizer.step()
+
             thr = 0.2
             speed_r = 0.2
             tmp_v = torch.abs(tmp_obs['state'][:,-2:].detach())
