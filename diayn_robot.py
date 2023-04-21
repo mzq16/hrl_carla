@@ -315,7 +315,7 @@ def main():
             'use_sde': False,
             }
         sac_args = {
-            'learning_rate': 5e-5,
+            'learning_rate': 1e-5,
             'buffer_size': 10000,
             'train_freq': (10,'step'),
             'gradient_steps': 10,
