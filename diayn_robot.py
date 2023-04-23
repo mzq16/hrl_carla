@@ -345,6 +345,34 @@ def main():
         server_manager.stop()
         
 def eval(z=None):
+    argparser = argparse.ArgumentParser(description='CARLA Automatic Control Data Collection')
+    argparser.add_argument(
+        '--host',
+        metavar='H',
+        default='127.0.0.1',
+        help='IP of the host server (default: 127.0.0.1)')
+    argparser.add_argument(
+        '--carla_sh_path',
+        default='/home/ubuntu/carla-simulator/CarlaUE4.sh',
+        help='path of carla server')
+    argparser.add_argument(
+        '--base_ckpt_path',
+        default='SAC_train_data/diayn_ckpt',
+        help='path of ckpt dir')
+    argparser.add_argument(
+        '--base_buffer_path',
+        default='SAC_train_data/diayn_buffer',
+        help='path of buffer dir')
+    argparser.add_argument(
+        '--number_z',
+        default=5,
+        help='number of skill')
+    args = argparser.parse_args()
+    server_env_configs = propre_envconfig(num_env=2)
+    server_manager = server_utils.CarlaServerManager(args.carla_sh_path, configs=server_env_configs)
+    server_manager.start()
+    time.sleep(15)
+
     env_cfg1 = {
             'port':2000,
             'map_id':1,
@@ -353,28 +381,40 @@ def eval(z=None):
         'port':2005,
         'map_id':2,
         }
-    env_cfg =  [env_cfg1, env_cfg2]
+    env_cfg = [env_cfg1, env_cfg2]
     if len(env_cfg) == 1:
         env = DummyVecEnv([lambda port=port: env_make(**port) for port in env_cfg])
     else:
         env = SubprocVecEnv([lambda port=port: env_make(**port) for port in env_cfg])
-    args = {
-            'features_extractor_entry_point': 'diayn.torch_layers:diaynCNN', 
+    policy_args = {
+            'features_extractor_entry_point': 'SAC.torch_layers:diaynCNN', 
             'features_extractor_kwargs': {'states_neurons': [256, 256],
                                             'number_z': args.number_z}, 
             'use_sde': False,
         }
-    robot = Robot(env, args, number_z=50)
+    sac_args = {
+            'learning_rate': 1e-5,
+            'buffer_size': 10000,
+            'train_freq': (10,'step'),
+            'gradient_steps': 10,
+            'target_update_interval': 1,
+            'learning_starts': 100,
+            'batch_size': 128,
+            'ent_coef': "auto",                    # defualt "auto"
+            'add_action': True,
+            'policy_kwargs': policy_args,
+            'number_z': 5,
+            'life_time': 1e5,
+        }
+    robot = Robot(env, 
+            number_z=args.number_z, 
+            sac_args=sac_args, 
+            base_ckpt_path=args.base_ckpt_path, 
+            base_buffer_path=args.base_buffer_path)
 
-    if z is None:
-        tmp_z = np.random.randint(0, robot._number_z)
-
-    else:
-        tmp_z = z
-    
-    print(tmp_z)
+    tmp_z = 0
     video_path = 'SAC/video/' + 'eval_{}_{}.mp4'.format(robot._start_timesteps, tmp_z) 
-    Robot.evaluate_policy(env=env, policy=robot.diayn.policy, video_path=video_path, tmp_z=tmp_z, number_z=robot._number_z)
+    Robot.evaluate_policy(env=env, policy=robot.diayn.policy, video_path=video_path, min_eval_steps_per_z=100, number_z=robot._number_z)
 
 if __name__ == '__main__':
     main()
