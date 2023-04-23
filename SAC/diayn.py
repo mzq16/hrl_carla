@@ -381,7 +381,7 @@ class my_diayn(BaseAlgorithm):
         reward_ps = []
 
         # 1.train discrimnator
-        for gradient_step in range(gradient_steps):
+        for gradient_step in range(10*gradient_steps):
             # Sample replay buffer
             replay_data = self.replay_buffer.sample(batch_size, env=self._vec_normalize_env)
             with th.no_grad():
