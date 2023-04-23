@@ -417,4 +417,5 @@ def eval(z=None):
     Robot.evaluate_policy(env=env, policy=robot.diayn.policy, video_path=video_path, min_eval_steps_per_z=100, number_z=robot._number_z)
 
 if __name__ == '__main__':
-    main()
+    #main()
+    eval()
