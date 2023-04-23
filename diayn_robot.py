@@ -140,52 +140,50 @@ class Robot(object):
         return {key: torch.as_tensor(_obs).float().to(device) for (key, _obs) in obs.items()}
     
     @staticmethod
-    def evaluate_policy(env, policy: my_diaynPolicy, video_path: str, min_eval_steps: int = 1000, tmp_z: int = 0, number_z: int = 50):
-        device = torch.device('cuda:1')
+    def evaluate_policy(env, policy: my_diaynPolicy, video_path: str, min_eval_steps_per_z: int = 100,  number_z: int = 50):
+        device = torch.device('cuda:2')
         policy = policy.eval()
         
         for i in range(env.num_envs):
             env.set_attr('eval_mode', True, indices=i)
         obs = env.reset()
-        z_onehot = np.zeros((number_z,))
-        
-        z_onehot[tmp_z] = 1
-        obs['z_onehot'][:] = z_onehot
-        o = WandbCallback.dict_to_tensor(obs, device)
+
+        all_onehot = np.eye(number_z)
+        #z_onehot = np.zeros((number_z,))
+        #z_onehot[tmp_z] = 1
         list_render = []
-        
-        ep_events = {}
-        for i in range(env.num_envs):
-            ep_events[f'venv_{i}'] = []
+        pbar = tqdm(initial=0, total=min_eval_steps_per_z * number_z)
 
-        n_step = 0
-        
-        pbar = tqdm(initial=0, total=min_eval_steps)
-        while n_step < min_eval_steps:
-            mean_actions, log_std, kwargs= policy.actor.get_action_dist_params(o)
-            actions, log_probs = policy.actor.action_dist.log_prob_from_params(mean_actions, log_std)
-            value, _ = torch.cat(policy.critic(o, actions), dim=1).min(dim=1)
-            #value, _ = torch.min(value, dim=1)
-            actions = np.array(actions.detach().cpu())
-            log_probs = np.array(log_probs.detach().cpu())
-            mean_actions = np.array(mean_actions.detach().cpu())
-            log_std = np.array(log_std.detach().cpu().exp())
-            values = np.array(value.detach().cpu()).reshape(-1,)
-            obs, reward, done, info = env.step(actions)
-            obs['z_onehot'][:] = z_onehot
+        for j in range(number_z):
+            nz_step = 0
+            tmp_z = j
+            obs['z_onehot'][:] = all_onehot[tmp_z]
             o = WandbCallback.dict_to_tensor(obs, device)
+            while nz_step < min_eval_steps_per_z:
+                mean_actions, log_std, kwargs= policy.actor.get_action_dist_params(o)
+                actions, log_probs = policy.actor.action_dist.log_prob_from_params(mean_actions, log_std)
+                value, _ = torch.cat(policy.critic(o, actions), dim=1).min(dim=1)
+                #value, _ = torch.min(value, dim=1)
+                actions = np.array(actions.detach().cpu())
+                log_probs = np.array(log_probs.detach().cpu())
+                mean_actions = np.array(mean_actions.detach().cpu())
+                log_std = np.array(log_std.detach().cpu().exp())
+                values = np.array(value.detach().cpu()).reshape(-1,)
+                obs, reward, done, info = env.step(actions)
+                obs['z_onehot'][:] = all_onehot[tmp_z]
+                o = WandbCallback.dict_to_tensor(obs, device)
 
-            for i in range(env.num_envs):
-                env.set_attr('action', actions[i], indices=i)
-                env.set_attr('action_value', values[i], indices=i)
-                env.set_attr('action_log_probs', log_probs[i], indices=i)
-                env.set_attr('action_mu', mean_actions[i], indices=i)
-                env.set_attr('action_sigma', log_std[i], indices=i)
-                env.set_attr('z', tmp_z, indices=i)
+                for i in range(env.num_envs):
+                    env.set_attr('action', actions[i], indices=i)
+                    env.set_attr('action_value', values[i], indices=i)
+                    env.set_attr('action_log_probs', log_probs[i], indices=i)
+                    env.set_attr('action_mu', mean_actions[i], indices=i)
+                    env.set_attr('action_sigma', log_std[i], indices=i)
+                    env.set_attr('z', tmp_z, indices=i)
                 
-            list_render.append(env.render('rgb_array'))
-            n_step += 1
-            pbar.update(1)
+                list_render.append(env.render('rgb_array'))
+                nz_step += 1
+                pbar.update(1)
         pbar.close()
 
         encoder = ImageEncoder(video_path, list_render[0].shape, 30, 30)
@@ -375,11 +373,11 @@ def eval(z=None):
 
     env_cfg1 = {
             'port':2000,
-            'map_id':1,
+            'map_id':0,
         }
     env_cfg2 = {
         'port':2005,
-        'map_id':2,
+        'map_id':1,
         }
     env_cfg = [env_cfg1, env_cfg2]
     if len(env_cfg) == 1:

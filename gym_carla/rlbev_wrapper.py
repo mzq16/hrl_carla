@@ -620,6 +620,7 @@ class RLdiayn_egov_Wrapper(gym.Wrapper):
             'bev_render': obs['bev_render'],
             'info': info,
             'state': obs_dict['state'],
+            'birdview':obs_dict['birdview'],
         }
         self._raw_obs['info'] = info
         return obs_dict, reward, done, info
@@ -654,9 +655,15 @@ class RLdiayn_egov_Wrapper(gym.Wrapper):
     @staticmethod
     def im_render(obs):
         im_birdview = obs['bev_render']
+        birdview = obs['birdview']
         h, w, c = im_birdview.shape
-        im = np.zeros([h, w*2, c], dtype=np.uint8)
+        im = np.zeros([h, w*3, c], dtype=np.uint8)
         im[:h, :w] = im_birdview
+        tmp_img = np.zeros((192, 192, 3), dtype=np.uint8)
+        tmp_img[:,:,0] = birdview[0]
+        tmp_img[:,:,1] = birdview[0]
+        tmp_img[:,:,2] = birdview[0]
+        im[:h,w:2*w] = tmp_img
         
         # action = np.array2string(obs['action'], precision=2, separator=',', suppress_small=True)
         action_str = np.array2string(obs['action'], precision=2, separator=',', suppress_small=True)
@@ -667,19 +674,19 @@ class RLdiayn_egov_Wrapper(gym.Wrapper):
         txt_t = f'step:{obs["info"]["timestamp"]["step"]:5}, frame:{obs["info"]["timestamp"]["frame"]:5}'
         im = cv2.putText(im, txt_t, (3, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
         txt_1 = f'a{action_str} v:{obs["action_value"]:5.2f} p:{obs["action_log_probs"]:5.2f}'
-        im = cv2.putText(im, txt_1, (w, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
+        im = cv2.putText(im, txt_1, (2*w, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
         txt_2 = f's{state_str}'
-        im = cv2.putText(im, txt_2, (w, 36), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
+        im = cv2.putText(im, txt_2, (2*w, 36), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
 
         txt_3 = f'a{mu_str} b{sigma_str} z{z_str}'
-        im = cv2.putText(im, txt_3, (w, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
+        im = cv2.putText(im, txt_3, (2*w, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
         '''
         for i, txt in enumerate(obs['reward_debug']['debug_texts'] +
                                 obs['terminal_debug']['debug_texts']):
             im = cv2.putText(im, txt, (w, (i+2)*12), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
         '''
         for i_txt, txt in enumerate(obs['info']['text']):
-                im = cv2.putText(im, txt, (w, 36+(i_txt+1)*15), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 255, 255), 1)
+                im = cv2.putText(im, txt, (2*w, 36+(i_txt+1)*15), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 255, 255), 1)
         return im
 
     
