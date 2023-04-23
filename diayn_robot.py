@@ -59,10 +59,10 @@ class Robot(object):
             self.diayn._setup_model()
         # print(self.diayn.policy)
 
-    def learn(self, callback):
+    def learn(self, callback, total_timesteps=100000):
         self.diayn._setup_learn(callback=callback, start_timestamp=self._start_timesteps)
         self.diayn.learn(
-            total_timesteps=1500000,
+            total_timesteps=total_timesteps,
             callback=callback,
             number_z=self._number_z,
         )
@@ -300,7 +300,7 @@ def main():
         
         wandb_cfg = {
             'wb_project': 'diayn_5skill_road&ego_school_iter',
-            'wb_name': None,
+            'wb_name': 'less_route',
             'wb_notes': None,
             'wb_tags': None
         }
@@ -332,7 +332,7 @@ def main():
             sac_args=sac_args, 
             base_ckpt_path=args.base_ckpt_path, 
             base_buffer_path=args.base_buffer_path)
-        robot.learn(callback=callback)
+        robot.learn(callback=callback, total_timesteps=2000000)
 
     except:
         pid = os.getpid()
@@ -415,5 +415,5 @@ def eval(z=None):
     Robot.evaluate_policy(env=env, policy=robot.diayn.policy, video_path=video_path, min_eval_steps_per_z=100, number_z=robot._number_z)
 
 if __name__ == '__main__':
-    #main()
-    eval()
+    main()
+    #eval()
