@@ -470,7 +470,7 @@ class EgoVehicle(object):
         self._start_wp_ind, rest_wp_number = prepro_route_trace(self._route_trace, ev_loc, self._start_wp_ind, 10)
         
         rest_wp_number = min(30, rest_wp_number)
-        route_in_pixel = np.array([[self._world_to_pixel(wp.transform.location)] for wp, _ in self._route_trace[self._start_wp_ind :]])
+        route_in_pixel = np.array([[self._world_to_pixel(wp.transform.location)] for wp, _ in self._route_trace[self._start_wp_ind :rest_wp_number+self._start_wp_ind]])
         #print('hh',curr_wp_ind)
         route_warped = cv.transform(route_in_pixel, M_warp)
         cv.polylines(route_mask, [np.round(route_warped).astype(np.int32)], False, 1, thickness=16)
