@@ -108,7 +108,7 @@ class Robot(object):
         ind = np.where(b)[0]
         return len(ind), ind
         
-    def check_ckpt(self, dir_path='SAC/diayn_ckpt'):
+    def check_ckpt(self, dir_path='SAC_transformer/diayn_ckpt'):
         ckpt_list = os.listdir(dir_path)
         if ckpt_list:
             ckpt_list[0].split('_')[1].split('.')[0]
@@ -120,7 +120,7 @@ class Robot(object):
             self._start_timesteps = 0
             print('no exist ckpt, start a new train')
 
-    def check_buffer(self, dir_path='SAC/diayn_buffer'):
+    def check_buffer(self, dir_path='SAC_transformer/diayn_buffer'):
         buffer_list = os.listdir(dir_path)
         if len(buffer_list) == 0:
             self._dir_buffer = None
@@ -288,15 +288,15 @@ def main():
         help='path of carla server')
     argparser.add_argument(
         '--base_ckpt_path',
-        default='SAC/diayn_ckpt',
+        default='SAC_transformer/diayn_ckpt',
         help='path of ckpt dir')
     argparser.add_argument(
         '--base_buffer_path',
-        default='SAC/diayn_buffer',
+        default='SAC_transformer/diayn_buffer',
         help='path of buffer dir')
     argparser.add_argument(
         '--number_z',
-        default=30,
+        default=5,
         help='number of skill')
     args = argparser.parse_args()
     
@@ -326,7 +326,7 @@ def main():
             env = SubprocVecEnv([lambda port=port: env_make(**port) for port in env_cfg])
         
         wandb_cfg = {
-            'wb_project': 'diayn_30skill_road&ego_transformer_server',
+            'wb_project': 'diayn_5skill_road&ego_transformer_scholar',
             'wb_name': None,
             'wb_notes': None,
             'wb_tags': None
@@ -347,7 +347,7 @@ def main():
             'learning_starts': 100,
             'batch_size': 128,
             'ent_coef': "auto",                    # defualt "auto"
-            'add_action': True,
+            'add_action': False,
             'policy_kwargs': policy_args,
             'number_z': args.number_z,
             'life_time': 1e5,
@@ -358,7 +358,8 @@ def main():
             number_z=args.number_z, 
             sac_args=sac_args, 
             base_ckpt_path=args.base_ckpt_path, 
-            base_buffer_path=args.base_buffer_path)
+            base_buffer_path=args.base_buffer_path,
+            device=torch.device(2))
         robot.learn(callback=callback)
 
     except:
@@ -449,5 +450,5 @@ def eval():
     Robot.evaluate_policy(env=env, policy=robot.diayn.policy, video_path=video_path, number_z=robot._number_z,device=device)
 
 if __name__ == '__main__':
-    #main()
-    eval()
+    main()
+    #eval()

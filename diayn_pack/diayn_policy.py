@@ -171,7 +171,7 @@ class my_diaynPolicy(BasePolicy):
 
         
         self.discriminator = self.make_discriminator(number_z=self._number_z)
-        self.discriminator.optimizer = self.optimizer_class(self.discriminator.parameters(), lr=3e-5, **self.optimizer_kwargs)
+        self.discriminator.optimizer = self.optimizer_class(self.discriminator.parameters(), lr=1e-4, **self.optimizer_kwargs)
 
     def _get_constructor_parameters(self) -> Dict[str, Any]:
         data = super()._get_constructor_parameters()

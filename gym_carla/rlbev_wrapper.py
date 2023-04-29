@@ -876,11 +876,13 @@ class RLdiayn_egov_transformer_Wrapper(gym.Wrapper):
                 image[i][bev_only[i]] = 255
             
         # state order: control / velocity -> throttle, steer, brake, gear / vel_x, vel_y
+        '''
         if 'control' in obs:
             state_list.append(obs['control'].throttle)
             state_list.append(obs['control'].steer)
             state_list.append(obs['control'].brake)
             state_list.append(obs['control'].gear / 5.0)
+        '''
         if 'velocity' in obs:
             vel_x = obs['velocity'].x
             vel_y = obs['velocity'].y
@@ -902,10 +904,10 @@ class RLdiayn_egov_transformer_Wrapper(gym.Wrapper):
     def preprocess_statespace(self):
         # state order: control,vel -> throttle, steer, brake, gear, vel_x, vel_y
         state_space = []
-        state_space.append(self._observation_space['throttle'])
-        state_space.append(self._observation_space['steer'])
-        state_space.append(self._observation_space['brake'])
-        state_space.append(self._observation_space['gear'])
+        #state_space.append(self._observation_space['throttle'])
+        #state_space.append(self._observation_space['steer'])
+        #state_space.append(self._observation_space['brake'])
+        #state_space.append(self._observation_space['gear'])
         state_space.append(self._observation_space['vel_xy'])
         state_low = np.concatenate([s.low for s in state_space])
         state_high = np.concatenate([s.high for s in state_space])

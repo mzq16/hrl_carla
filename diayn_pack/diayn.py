@@ -424,8 +424,42 @@ class my_diayn(BaseAlgorithm):
 
         ent_coef_losses, ent_coefs = [], []
         actor_losses, critic_losses = [], []
+        log_q_fi_zses = []
         dis_losses = []
         reward_ps = []
+
+        # 1.train discrimnator
+        for gradient_step in range(10*gradient_steps):
+            # Sample replay buffer
+            replay_data = self.replay_buffer.sample(batch_size, env=self._vec_normalize_env)
+            with th.no_grad():
+                # mid extract
+                tmp_obs = WandbCallback.dict_to_tensor(replay_data.observations, self.device)
+                mid_features = self.policy.features_extractor.half_forward(tmp_obs)
+                
+            # compute discriminator loss
+            if self._add_action:
+                logits = self.policy.discriminator(mid_features, replay_data.actions)
+            else:
+                logits = self.policy.discriminator(mid_features)
+            # dis_loss = F.mse_loss(logits, replay_data.observations['z_onehot'])
+            def tran_onehot(label_list: torch.Tensor):
+                z_onehot = torch.zeros((batch_size, self._number_z)).to(self.device)
+                x = label_list[:,0].reshape(-1, 1).long()
+                return z_onehot.scatter_(1, x, 1).float()
+            '''
+            !!!!!!!!!!
+            remember this is log_softmax
+            so if want to train with one-hot label, should add torch.exp first 
+            '''
+            onehot = tran_onehot(replay_data.observations['z'])
+            dis_loss = F.cross_entropy(torch.exp(logits), onehot)
+            self.discriminator.optimizer.zero_grad()
+            dis_loss.backward()
+            self.discriminator.optimizer.step()
+            
+
+            # 2.train rl with disc reward
         for gradient_step in range(gradient_steps):
             # Sample replay buffer
             replay_data = self.replay_buffer.sample(batch_size, env=self._vec_normalize_env)
@@ -464,20 +498,14 @@ class my_diayn(BaseAlgorithm):
                 mid_features = self.policy.features_extractor.half_forward(tmp_obs)
                 # aug_mid_features = torch.cat([mid_features, replay_data.actions], dim=1)
             # compute discriminator loss
-            if self._add_action:
+
+            
+            if self._add_action:   
                 logits = self.policy.discriminator(mid_features, replay_data.actions)
             else:
                 logits = self.policy.discriminator(mid_features)
             # dis_loss = F.mse_loss(logits, replay_data.observations['z_onehot'])
-            def tran_onehot(label_list: torch.Tensor):
-                z_onehot = torch.zeros((batch_size, self._number_z)).to(self.device)
-                x = label_list[:,0].reshape(-1, 1).long()
-                return z_onehot.scatter_(1, x, 1).float()
-            onehot = tran_onehot(replay_data.observations['z'])
-            dis_loss = F.cross_entropy(logits, onehot)
-            self.discriminator.optimizer.zero_grad()
-            dis_loss.backward()
-            self.discriminator.optimizer.step()
+            
             thr = 0.2
             speed_r = 0.2
             tmp_v = torch.abs(tmp_obs['state'][:,-2:].detach())
@@ -487,11 +515,12 @@ class my_diayn(BaseAlgorithm):
             log_p_z = torch.log(torch.zeros((batch_size,1)) + 1.0/self._number_z ).to(self.device)
 
             log_q_fi_zs = torch.sum(logits * onehot, dim=1).view(-1,1).detach()
-            reward_p = log_q_fi_zs - log_p_z/10.0 + reward_r
+            reward_p = log_q_fi_zs - log_p_z/3.0 + reward_r
             #reward_p = -0.5 - log_p_z/10.0 + reward_r
             reward_ps.append(torch.mean(reward_p).item())
             mean_log_q_zs = torch.mean(log_q_fi_zs) # local_log_q_zs
-            dis_losses.append(mean_log_q_zs.item())
+            log_q_fi_zses.append(mean_log_q_zs.item())
+            #dis_losses.append(mean_log_q_zs.item())
 
             with th.no_grad():
                 # Select action according to policy
@@ -542,7 +571,7 @@ class my_diayn(BaseAlgorithm):
         local_actor_loss = np.mean(actor_losses)
         local_critic_loss = np.mean(critic_losses)
         local_log_prob = log_prob.detach().mean()
-        local_log_q_zs = np.mean(dis_losses)
+        local_log_q_zs = np.mean(log_q_fi_zses)
         local_reward_ps = np.mean(reward_ps)
 
         #self.logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
