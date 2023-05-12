@@ -342,7 +342,7 @@ def main():
             'learning_rate': 5e-5,
             'buffer_size': 50000,
             'train_freq': (10,'step'),
-            'gradient_steps': 10,
+            'gradient_steps': 20,
             'target_update_interval': 1,
             'learning_starts': 100,
             'batch_size': 128,
