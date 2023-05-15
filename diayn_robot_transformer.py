@@ -383,15 +383,15 @@ def eval():
         help='path of carla server')
     argparser.add_argument(
         '--base_ckpt_path',
-        default='SAC/diayn_ckpt',
+        default='SAC/transformer_5/diayn_ckpt',
         help='path of ckpt dir')
     argparser.add_argument(
         '--base_buffer_path',
-        default='SAC/diayn_buffer',
+        default='SAC/transformer_5/diayn_buffer',
         help='path of buffer dir')
     argparser.add_argument(
         '--number_z',
-        default=30,
+        default=5,
         help='number of skill')
     args = argparser.parse_args()
     
@@ -444,11 +444,11 @@ def eval():
             'life_time': 1e5,
             
         }
-    robot = Robot(env=env, sac_args=sac_args, number_z=30,base_ckpt_path=args.base_ckpt_path, base_buffer_path=args.base_buffer_path,device=device)
+    robot = Robot(env=env, sac_args=sac_args, number_z=5,base_ckpt_path=args.base_ckpt_path, base_buffer_path=args.base_buffer_path,device=device)
     #tmp_z = np.random.randint(0, robot._number_z)
     video_path = 'SAC/video/' + 'eval_{}.mp4'.format(robot._start_timesteps) 
     Robot.evaluate_policy(env=env, policy=robot.diayn.policy, video_path=video_path, number_z=robot._number_z,device=device)
 
 if __name__ == '__main__':
-    main()
-    #eval()
+    #main()
+    eval()
