@@ -263,11 +263,11 @@ def main():
         help='path of carla server')
     argparser.add_argument(
         '--base_ckpt_path',
-        default='SAC_train_data/diayn_ckpt',
+        default='data/diayn_data/normal/5skill/diayn_ckpt',
         help='path of ckpt dir')
     argparser.add_argument(
         '--base_buffer_path',
-        default='SAC_train_data/diayn_buffer',
+        default='data/diayn_data/normal/5skill/diayn_buffer',
         help='path of buffer dir')
     argparser.add_argument(
         '--number_z',
@@ -357,11 +357,11 @@ def eval(z=None):
         help='path of carla server')
     argparser.add_argument(
         '--base_ckpt_path',
-        default='SAC_train_data/diayn_ckpt',
+        default='data/diayn_data/normal/5skill/diayn_buffer',
         help='path of ckpt dir')
     argparser.add_argument(
         '--base_buffer_path',
-        default='SAC_train_data/diayn_buffer',
+        default='data/diayn_data/normal/5skill/diayn_ckpt',
         help='path of buffer dir')
     argparser.add_argument(
         '--number_z',
