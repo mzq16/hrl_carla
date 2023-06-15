@@ -381,24 +381,29 @@ class my_diayn(BaseAlgorithm):
         reward_ps = []
 
         # 1.train discrimnator
-        for gradient_step in range(10*gradient_steps):
+        for gradient_step in range(2): # 10*gradient_steps
             # Sample replay buffer
-            replay_data = self.replay_buffer.sample(batch_size, env=self._vec_normalize_env)
-            with th.no_grad():
-                # mid extract
-                tmp_obs = WandbCallback.dict_to_tensor(replay_data.observations, self.device)
-                mid_features = self.policy.features_extractor.half_forward(tmp_obs)
-                
-            # compute discriminator loss
-            if self._add_action:
-                logits = self.policy.discriminator(mid_features, replay_data.actions)
-            else:
-                logits = self.policy.discriminator(mid_features)
-            # dis_loss = F.mse_loss(logits, replay_data.observations['z_onehot'])
-            dis_loss = F.cross_entropy(logits, replay_data.observations['z_onehot'].float())
-            self.discriminator.optimizer.zero_grad()
-            dis_loss.backward()
-            self.discriminator.optimizer.step()
+            # replay_data = self.replay_buffer.sample(batch_size, env=self._vec_normalize_env)
+            
+            data_loader = self.sample_data(self.replay_buffer, 256)
+            for data in data_loader:
+                observations = data['observations']
+                actions = data['actions']
+                with th.no_grad():
+                    # mid extract
+                    tmp_obs = WandbCallback.dict_to_tensor(observations, self.device) # replay_data.observations
+                    mid_features = self.policy.features_extractor.half_forward(tmp_obs)
+                    
+                # compute discriminator loss
+                if self._add_action:
+                    logits = self.policy.discriminator(mid_features, actions) # replay_data.actions
+                else:
+                    logits = self.policy.discriminator(mid_features)
+                # dis_loss = F.mse_loss(logits, replay_data.observations['z_onehot'])
+                dis_loss = F.cross_entropy(logits, tmp_obs['z_onehot'].float()) # replay_data.observations
+                self.discriminator.optimizer.zero_grad()
+                dis_loss.backward()
+                self.discriminator.optimizer.step()
 
         # 2.train rl with disc 
         for gradient_step in range(gradient_steps):
@@ -720,6 +725,37 @@ class my_diayn(BaseAlgorithm):
             pbar.update(frq*self.env.num_envs)
         pbar.close()
         #print('finished train')
+
+    def sample_data(self, replay_buffer:DictReplayBuffer, batch_size: int = 256): # return n_envs * batch_size
+        pos = replay_buffer.pos
+        size = replay_buffer.buffer_size
+        full = replay_buffer.full
+        start_idx = 0
+        
+        if full:
+            end = size
+        else:
+            end = pos
+        indices = np.random.permutation(size)
+        while start_idx + batch_size < end:
+            yield self.get_datasamples(replay_buffer, indices[start_idx : start_idx + batch_size], batch_size)
+            start_idx += batch_size
+
+    def get_datasamples(self, replay_buffer:DictReplayBuffer, batch_inds: np.ndarray, batch_size: int):
+        observations = {}
+        for key, obs in replay_buffer.observations.items():
+            shape = (batch_size * self.n_envs,) + obs[0,0].shape
+            obs = obs[batch_inds,:,:].reshape(shape)
+            observations[key] = obs
+        # observations = {key: obs[batch_inds, :, :].reshape for key, obs in replay_buffer.observations.items()}
+        # observations ={key: replay_buffer.to_torch(obs[batch_inds]) for (key, obs) in replay_buffer.observations.items()}
+        actions=replay_buffer.to_torch(replay_buffer.actions[batch_inds,:].reshape(batch_size*self.n_envs,-1))
+        
+        data = {
+            'observations': observations,
+            'actions': actions,
+        }
+        return data
 
     def _sample_action(
         self,

@@ -300,7 +300,7 @@ def main():
         
         wandb_cfg = {
             'wb_project': 'diayn_5skill_road&ego_school_iter',
-            'wb_name': 'less_route',
+            'wb_name': 'iter_all',
             'wb_notes': None,
             'wb_tags': None
         }
@@ -332,9 +332,11 @@ def main():
             sac_args=sac_args, 
             base_ckpt_path=args.base_ckpt_path, 
             base_buffer_path=args.base_buffer_path)
-        robot.learn(callback=callback, total_timesteps=2000000)
+        robot.learn(callback=callback, total_timesteps=2500000)
 
     except:
+        env.close()
+        server_manager.stop()
         pid = os.getpid()
         subprocess.Popen('kill {}'.format(pid), shell=True)
 
